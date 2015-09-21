@@ -3,6 +3,7 @@ project(nids)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} \
 -g -O2 \
+-D__APPLE__ \
 -DENABLE_TCPREASM \
 -Wno-deprecated-declarations \
 -D_BSD_SOURCE \
