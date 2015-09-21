@@ -261,6 +261,11 @@ void nids_pcap_handler(u_char *par, struct pcap_pkthdr *hdr, u_char *data) {
     nids_last_pcap_data = data;
     (void)par; /* warnings... */
     switch (linktype) {
+#ifdef DLT_PKTAP
+        case DLT_PKTAP:
+            nids_linkoffset = 0;
+            break;
+#endif
         case DLT_EN10MB:
             if (hdr->caplen < 14) {
                 return;
@@ -354,7 +359,7 @@ void nids_pcap_handler(u_char *par, struct pcap_pkthdr *hdr, u_char *data) {
 
 #ifdef HAVE_LIBGTHREAD_2_0
     if (nids_params.multiproc) {
-        /* 
+        /*
          * Insert received fragment into the async capture queue.
          * We hope that the overhead of memcpy 
          * will be saturated by the benefits of SMP - mcree
@@ -638,6 +643,20 @@ int nids_init() {
         }
     }
     switch ((linktype = pcap_datalink(desc))) {
+        /*
+
+         * support for Apple PKTAP datalink header
+         * since our libdivert library has extracted the PKTAP header
+         * then we just set the offset value to be zero
+         *
+         * date: 2015-09-21
+         * modified by huangyan13@baidu.com
+         */
+#ifdef DLT_PKTAP
+        case DLT_PKTAP:
+            nids_linkoffset = 0;
+            break;
+#endif
 #ifdef DLT_IEEE802_11
 #ifdef DLT_PRISM_HEADER
         case DLT_PRISM_HEADER:

@@ -5,7 +5,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} \
 -g -O2 \
 -D__APPLE__ \
 -DENABLE_TCPREASM \
--Wno-deprecated-declarations \
 -D_BSD_SOURCE \
 -DLIBNET_VER=1 \
 -DHAVE_ICMPHDR=0 \
@@ -44,6 +43,6 @@ include_directories(SYSTEM ./ ${GLIB_INCLUDE_DIR1} ${GLIB_INCLUDE_DIR2})
 
 add_library(nids SHARED ${SOURCE_FILES})
 add_library(nids_static STATIC ${SOURCE_FILES})
-target_link_libraries(nids pcap net gthread-2.0 glib-2.0)
-target_link_libraries(nids_static pcap net gthread-2.0 glib-2.0)
+target_link_libraries(nids pcap net glib-2.0)
+target_link_libraries(nids_static pcap net glib-2.0)
 set_target_properties(nids_static PROPERTIES OUTPUT_NAME nids)

@@ -8,7 +8,13 @@
 #define HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the `gthread-2.0' library (-lgthread-2.0). */
-#define HAVE_LIBGTHREAD_2_0 1
+/*
+ * do not use gthread on Mac OSX
+ *
+ * date: 2015-09-21
+ * modified by: huangyan13@baidu.com
+ */
+// #define HAVE_LIBGTHREAD_2_0 1
 
 /* Define to 1 if you have the `nsl' library (-lnsl). */
 /* #undef HAVE_LIBNSL */
