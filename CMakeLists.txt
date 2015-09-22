@@ -1,37 +1,39 @@
 cmake_minimum_required(VERSION 3.3)
 project(nids)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} \
--g -O2 \
--D__APPLE__ \
--D_BSD_SOURCE \
--DLIBNET_VER=1 \
--DHAVE_ICMPHDR=0 \
--DHAVE_TCP_STATES=0 \
--DHAVE_BSD_UDPHDR=1 \
--DHAVE_SOCKADDR_SA_LEN \
--DLIBNET_BSDISH_OS \
--DLIBNET_BSD_BYTE_SWAP \
--D_REENTRANT")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2")
+
+add_definitions(
+        -D__APPLE__
+        -D_BSD_SOURCE
+        -DLIBNET_VER=1
+        -DHAVE_ICMPHDR=0
+        -DHAVE_TCP_STATES=0
+        -DHAVE_BSD_UDPHDR=1
+        -DHAVE_SOCKADDR_SA_LEN
+        -DLIBNET_BSDISH_OS
+        -DLIBNET_BSD_BYTE_SWAP
+        -D_REENTRANT
+)
 
 set(SOURCE_FILES
-    allpromisc.c
-    checksum.c
-    checksum.h
-    hash.c
-    hash.h
-    ip_fragment.c
-    ip_fragment.h
-    ip_options.c
-    killtcp.c
-    libnids.c
-    nids.h
-    scan.c
-    scan.h
-    tcp.c
-    tcp.h
-    util.c
-    util.h)
+        allpromisc.c
+        checksum.c
+        checksum.h
+        hash.c
+        hash.h
+        ip_fragment.c
+        ip_fragment.h
+        ip_options.c
+        killtcp.c
+        libnids.c
+        nids.h
+        scan.c
+        scan.h
+        tcp.c
+        tcp.h
+        util.c
+        util.h)
 
 
 find_path(GLIB_INCLUDE_DIR1 glib.h PATH_SUFFIXES glib-2.0)
