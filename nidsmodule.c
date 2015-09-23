@@ -78,7 +78,7 @@ static char pynidsmodule__doc__[] =
 Functions:\n\
 \n\
 param() -- set various libnids parameters\n\
-init() -- open the capture stream, prepare internal \n\
+[disabled]init() -- open the capture stream, prepare internal \n\
 getfd() -- return the file descriptor associated with the capture stream\n\
 get_pkt_ts() -- return the timestamp of the most recently received packet\n\
 get_pcap_stats() -- return num packets rcvd, num pkts dropped,\n\
@@ -88,8 +88,8 @@ register_ip() -- install a callback for reassembled IP packet processing\n\
 register_tcp() -- install a callback for reaseembled TCP packet processing\n\
 register_udp() -- install a callback for reassembled UDP packet processing\n\
 chksum_ctl() -- control whether packets are checksum by source address\n\
-next() -- process one packet from the capture stream, invoking callbacks\n\
-run() -- process all packets from the capture stream, invoking callbacks\n\
+[disabled]next() -- process one packet from the capture stream, invoking callbacks\n\
+[disabled]run() -- process all packets from the capture stream, invoking callbacks\n\
 \n\
 Special objects and classes:\n\
 \n\
@@ -904,13 +904,18 @@ this call.\n";
 static PyObject *
 pynids_init(PyObject *na, PyObject *args)
 {
-	int ok;
-	if (!PyArg_ParseTuple(args, ":init")) return NULL;
+	/*
+	 * do nothing here, because vars are init in libdivert
+	 * modified by huangyan13@baidu.com 2015.09.23
+	 */
 
-	ok = nids_init();
-	if (! ok) return raisePynidsError();
-	if (nids_params.filename) pynids_offline_read = 1;
-	else pynids_offline_read = 0;
+//	int ok;
+//	if (!PyArg_ParseTuple(args, ":init")) return NULL;
+//
+//	ok = nids_init();
+//	if (! ok) return raisePynidsError();
+//	if (nids_params.filename) pynids_offline_read = 1;
+//	else pynids_offline_read = 0;
 
 	Py_RETURN_NONE;
 }

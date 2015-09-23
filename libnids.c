@@ -794,18 +794,19 @@ int nids_next() {
 }
 
 int nids_dispatch(int cnt) {
-    int r;
-
-    if (!desc) {
-        strcpy(nids_errbuf, "Libnids not initialized");
-        return -1;
-    }
-    START_CAP_QUEUE_PROCESS_THREAD(); /* threading... */
-    if ((r = pcap_dispatch(desc, cnt, (pcap_handler)nids_pcap_handler,
-                           NULL)) == -1) {
-        strcpy(nids_errbuf, "dispatch: ");
-        strncat(nids_errbuf, pcap_geterr(desc), sizeof(nids_errbuf) - 11);
-    }
-    STOP_CAP_QUEUE_PROCESS_THREAD();
-    return r;
+//    int r;
+//
+//    if (!desc) {
+//        strcpy(nids_errbuf, "Libnids not initialized");
+//        return -1;
+//    }
+//    START_CAP_QUEUE_PROCESS_THREAD(); /* threading... */
+//    if ((r = pcap_dispatch(desc, cnt, (pcap_handler)nids_pcap_handler,
+//                           NULL)) == -1) {
+//        strcpy(nids_errbuf, "dispatch: ");
+//        strncat(nids_errbuf, pcap_geterr(desc), sizeof(nids_errbuf) - 11);
+//    }
+//    STOP_CAP_QUEUE_PROCESS_THREAD();
+//    return r;
+    return 0;
 }
