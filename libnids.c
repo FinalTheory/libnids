@@ -724,15 +724,15 @@ int nids_init() {
 }
 
 int nids_run() {
-    if (!desc) {
-        strcpy(nids_errbuf, "Libnids not initialized");
-        return 0;
-    }
-    START_CAP_QUEUE_PROCESS_THREAD(); /* threading... */
-    pcap_loop(desc, -1, (pcap_handler)nids_pcap_handler, 0);
-    /* FIXME: will this code ever be called? Don't think so - mcree */
-    STOP_CAP_QUEUE_PROCESS_THREAD();
-    nids_exit();
+//    if (!desc) {
+//        strcpy(nids_errbuf, "Libnids not initialized");
+//        return 0;
+//    }
+//    START_CAP_QUEUE_PROCESS_THREAD(); /* threading... */
+//    pcap_loop(desc, -1, (pcap_handler)nids_pcap_handler, 0);
+//    /* FIXME: will this code ever be called? Don't think so - mcree */
+//    STOP_CAP_QUEUE_PROCESS_THREAD();
+//    nids_exit();
     return 0;
 }
 
@@ -773,23 +773,24 @@ int nids_getfd() {
 }
 
 int nids_next() {
-    struct pcap_pkthdr h;
-    char *data;
-
-    if (!desc) {
-        strcpy(nids_errbuf, "Libnids not initialized");
-        return 0;
-    }
-    if (!(data = (char *)pcap_next(desc, &h))) {
-        strcpy(nids_errbuf, "next: ");
-        strncat(nids_errbuf, pcap_geterr(desc), sizeof(nids_errbuf) - 7);
-        return 0;
-    }
-    /* threading is quite useless (harmful) in this case - should we do an API change?  */
-    START_CAP_QUEUE_PROCESS_THREAD();
-    nids_pcap_handler(0, &h, (u_char *)data);
-    STOP_CAP_QUEUE_PROCESS_THREAD();
-    return 1;
+//    struct pcap_pkthdr h;
+//    char *data;
+//
+//    if (!desc) {
+//        strcpy(nids_errbuf, "Libnids not initialized");
+//        return 0;
+//    }
+//    if (!(data = (char *)pcap_next(desc, &h))) {
+//        strcpy(nids_errbuf, "next: ");
+//        strncat(nids_errbuf, pcap_geterr(desc), sizeof(nids_errbuf) - 7);
+//        return 0;
+//    }
+//    /* threading is quite useless (harmful) in this case - should we do an API change?  */
+//    START_CAP_QUEUE_PROCESS_THREAD();
+//    nids_pcap_handler(0, &h, (u_char *)data);
+//    STOP_CAP_QUEUE_PROCESS_THREAD();
+//    return 1;
+    return 0;
 }
 
 int nids_dispatch(int cnt) {
