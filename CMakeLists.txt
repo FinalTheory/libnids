@@ -17,6 +17,7 @@ add_definitions(
 )
 
 set(SOURCE_FILES
+        nidsmodule.c
         allpromisc.c
         checksum.c
         checksum.h
@@ -44,8 +45,6 @@ set(PYVER "2.7.10_2")
 string(SUBSTRING ${PYVER} 0 3 PYVER_2)
 set(HOMEBREW_PY /usr/local/Cellar/python/${PYVER}/Frameworks/Python.framework/Versions/${PYVER_2})
 
-find_path(GLIB_INCLUDE_DIR1 glib.h PATH_SUFFIXES glib-2.0)
-find_path(GLIB_INCLUDE_DIR2 glibconfig.h PATH_SUFFIXES lib/glib-2.0/include)
 
 # first try to find hombrew version of Python.h
 find_path(HOME_BREW_PYHDR Python.h
@@ -72,11 +71,5 @@ find_library(HOMEBREW_PYLIB
 find_library(HOMEBREW_PYLIB python${PYVER_2})
 
 
-add_library(nids SHARED ${SOURCE_FILES})
-add_library(nids_static STATIC ${SOURCE_FILES})
-add_library(pynids SHARED nidsmodule.c)
-target_link_libraries(nids pcap net glib-2.0)
-target_link_libraries(nids_static pcap net glib-2.0)
-target_link_libraries(pynids nids_static ${HOMEBREW_PYLIB})
-set_target_properties(nids_static PROPERTIES OUTPUT_NAME nids)
-set_target_properties(pynids PROPERTIES OUTPUT_NAME "nids" PREFIX "" SUFFIX ".so")
+add_library(nids STATIC ${SOURCE_FILES})
+target_link_libraries(nids pcap net ${HOMEBREW_PYLIB})

@@ -43,9 +43,9 @@
 /* Module Globals and Utility Functions                                   */
 /* ====================================================================== */
 
-static PyObject *pynids_error;         /* nids.error */
+static PyObject *pynids_error;         /* libdivert.error */
 
-static int pynids_offline_read = 0;    /* see nids.init(), nids.next() */
+static int pynids_offline_read = 0;    /* see libdivert.init(), libdivert.next() */
 
 static PyObject *tcpFunc  = NULL;
 static PyObject *udpFunc  = NULL;
@@ -447,6 +447,7 @@ statichere PyTypeObject HalfStream_Type = {
 static void
 callTcpFunc(struct tcp_stream *ts, void **param)
 {
+	PyGILState_STATE state = PyGILState_Ensure();
 	PyObject *ret = NULL;
 	TcpStream *tso = NULL;
 
@@ -462,12 +463,14 @@ callTcpFunc(struct tcp_stream *ts, void **param)
 	if (ret) {
 		Py_DECREF(ret);
 	}
+	PyGILState_Release(state);
 	return;
 }
 
 static void
 callUdpFunc(struct tuple4 *addr, u_char *data, int len, struct ip *pkt)
 {
+	PyGILState_STATE state = PyGILState_Ensure();
 	PyObject *ret = NULL;
 
 	DBG("callUdpFunc...\n");
@@ -478,12 +481,14 @@ callUdpFunc(struct tuple4 *addr, u_char *data, int len, struct ip *pkt)
 	if (ret) {
 		Py_DECREF(ret);
 	}
+	PyGILState_Release(state);
 	return;
 }
 
 static void
 callIpFunc(struct ip *pkt)
 {
+	PyGILState_STATE state = PyGILState_Ensure();
 	PyObject *ret = NULL;
 
 	DBG("callIpFunc...\n");
@@ -491,18 +496,21 @@ callIpFunc(struct ip *pkt)
 	if (ret) {
 		Py_DECREF(ret);
 	}
+	PyGILState_Release(state);
 	return;
 }
 
 static void
 callFragFunc(struct ip *pkt)
 {
+	PyGILState_STATE state = PyGILState_Ensure();
 	PyObject *ret = NULL;
 
 	ret = PyObject_CallFunction(fragFunc, "s#", pkt, ntohs(pkt->ip_len));
 	if (ret) {
 		Py_DECREF(ret);
 	}
+	PyGILState_Release(state);
 	return;
 }
 
@@ -794,11 +802,11 @@ pynids_param(PyObject *na, PyObject *args)
 
 	/******
 	if (!strcmp(name, "syslog"))
-		func_pp = &nids.syslog;
+		func_pp = &libdivert.syslog;
 	else if (!strcmp(name, "ip_filter"))
-		func_pp = &nids.ip_filter;
+		func_pp = &libdivert.ip_filter;
 	else if (!strcmp(name, "no_mem"))
-		func_pp = &nids.no_mem;
+		func_pp = &libdivert.no_mem;
     ******/
 
 	Py_RETURN_NONE;
@@ -827,7 +835,7 @@ static char pynids_next__doc__[] =
 \n\
 Attempt to process one packet, returning 1 if a packet was processed and 0\n\
 on timeout or EOF, as appropriate to the capture stream.  Serious errors in\n\
-pcap raise a nids.error exception.\n";
+pcap raise a libdivert.error exception.\n";
 
 static PyObject *
 pynids_next(PyObject *na, PyObject *args)
@@ -865,7 +873,7 @@ static char pynids_run__doc__[] =
 \n\
 On a live capture, process packets ad infinitum; on an offline read, process\n\
 packets until EOF.  In either case, an exception thrown in a user callback\n\
-or in nids/pcap (as nids.error) may abort processing.\n";
+or in nids/pcap (as libdivert.error) may abort processing.\n";
 
 static PyObject *
 pynids_run(PyObject *na, PyObject *args)
@@ -993,7 +1001,7 @@ static PyMethodDef pynids_methods[] = {
 /* ====================================================================== */
 
 DL_EXPORT(void)
-initnids(void)
+initlibdivert(void)
 {
 	PyObject *m;
 
@@ -1003,10 +1011,10 @@ initnids(void)
 	HalfStream_Type.ob_type = &PyType_Type;
 
 	/* Create the module and add the functions */
-	m = Py_InitModule3("nids", pynids_methods, pynidsmodule__doc__);
+	m = Py_InitModule3("libdivert", pynids_methods, pynidsmodule__doc__);
 
 	/* Initialize, add our exception object */
-	pynids_error = PyErr_NewException("nids.error", NULL, NULL);
+	pynids_error = PyErr_NewException("libdivert.error", NULL, NULL);
 	Py_INCREF(pynids_error);
 	PyModule_AddObject(m, "error", pynids_error);
 
@@ -1032,6 +1040,7 @@ initnids(void)
 
 	/* Save the original nids_params */
 	origNidsParams = nids_params;
+	PyEval_InitThreads();
 }
 
 /*
