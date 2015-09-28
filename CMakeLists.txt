@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.3)
 project(nids)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2 -fPIC")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fPIC -O2")
 
 add_definitions(
         -D__APPLE__
@@ -16,7 +16,7 @@ add_definitions(
         -D_REENTRANT
 )
 
-set(SOURCE_FILES
+set(SOURCE_FILES_NIDS
         nidsmodule.c
         allpromisc.c
         checksum.c
@@ -71,5 +71,5 @@ find_library(HOMEBREW_PYLIB
 find_library(HOMEBREW_PYLIB python${PYVER_2})
 
 
-add_library(nids STATIC ${SOURCE_FILES})
+add_library(nids SHARED ${SOURCE_FILES_NIDS})
 target_link_libraries(nids pcap net ${HOMEBREW_PYLIB})
