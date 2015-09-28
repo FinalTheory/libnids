@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.3)
 project(nids)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fPIC -O2")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fPIC")
 
 add_definitions(
         -D__APPLE__
@@ -47,7 +47,8 @@ set(HOMEBREW_PY /usr/local/Cellar/python/${PYVER}/Frameworks/Python.framework/Ve
 
 
 # first try to find hombrew version of Python.h
-find_path(HOME_BREW_PYHDR Python.h
+find_path(
+        HOME_BREW_PYHDR Python.h
         PATHS ${HOMEBREW_PY}/include/python${PYVER_2}
         NO_DEFAULT_PATH
 )
@@ -62,7 +63,8 @@ include_directories(
 )
 
 # first try to find hombrew version of libpython
-find_library(HOMEBREW_PYLIB
+find_library(
+        HOMEBREW_PYLIB
         python${PYVER_2}
         PATHS ${HOMEBREW_PY}/lib
         NO_DEFAULT_PATH
@@ -71,5 +73,5 @@ find_library(HOMEBREW_PYLIB
 find_library(HOMEBREW_PYLIB python${PYVER_2})
 
 
-add_library(nids SHARED ${SOURCE_FILES_NIDS})
+add_library(nids STATIC ${SOURCE_FILES_NIDS})
 target_link_libraries(nids pcap net ${HOMEBREW_PYLIB})
