@@ -57,6 +57,7 @@ find_path(HOME_BREW_PYHDR Python.h)
 
 include_directories(
         BEFORE SYSTEM ./
+        /usr/local/include
         ${GLIB_INCLUDE_DIR1}
         ${GLIB_INCLUDE_DIR2}
         ${HOME_BREW_PYHDR}
@@ -74,4 +75,4 @@ find_library(HOMEBREW_PYLIB python${PYVER_2})
 
 
 add_library(nids STATIC ${SOURCE_FILES_NIDS})
-target_link_libraries(nids pcap net ${HOMEBREW_PYLIB})
+target_link_libraries(nids ${HOMEBREW_PYLIB})
