@@ -524,43 +524,43 @@ void nids_unregister_ip_frag(void (*x)) {
     unregister_callback(&ip_frag_procs, x);
 }
 
-static int open_live() {
-    char *device;
-    int promisc = 0;
-
-    if (nids_params.device == NULL) {
-        nids_params.device = pcap_lookupdev(nids_errbuf);
-    }
-    if (nids_params.device == NULL) {
-        return 0;
-    }
-
-    device = nids_params.device;
-    if (!strcmp(device, "all")) {
-        device = "any";
-    } else {
-        promisc = (nids_params.promisc != 0);
-    }
-
-    if ((desc = pcap_open_live(device, 16384, promisc,
-                               nids_params.pcap_timeout, nids_errbuf)) == NULL) {
-                                   return 0;
-    }
-#ifdef __linux__
-    if (!strcmp(device, "any") && nids_params.promisc
-    && !set_all_promisc()) {
-    nids_errbuf[0] = 0;
-    strncat(nids_errbuf, strerror(errno), sizeof(nids_errbuf) - 1);
-    return 0;
-    }
-#endif
-    if (!raw_init()) {
-        nids_errbuf[0] = 0;
-        strncat(nids_errbuf, strerror(errno), sizeof(nids_errbuf) - 1);
-        return 0;
-    }
-    return 1;
-}
+//static int open_live() {
+//    char *device;
+//    int promisc = 0;
+//
+//    if (nids_params.device == NULL) {
+//        nids_params.device = pcap_lookupdev(nids_errbuf);
+//    }
+//    if (nids_params.device == NULL) {
+//        return 0;
+//    }
+//
+//    device = nids_params.device;
+//    if (!strcmp(device, "all")) {
+//        device = "any";
+//    } else {
+//        promisc = (nids_params.promisc != 0);
+//    }
+//
+//    if ((desc = pcap_open_live(device, 16384, promisc,
+//                               nids_params.pcap_timeout, nids_errbuf)) == NULL) {
+//                                   return 0;
+//    }
+//#ifdef __linux__
+//    if (!strcmp(device, "any") && nids_params.promisc
+//    && !set_all_promisc()) {
+//    nids_errbuf[0] = 0;
+//    strncat(nids_errbuf, strerror(errno), sizeof(nids_errbuf) - 1);
+//    return 0;
+//    }
+//#endif
+//    if (!raw_init()) {
+//        nids_errbuf[0] = 0;
+//        strncat(nids_errbuf, strerror(errno), sizeof(nids_errbuf) - 1);
+//        return 0;
+//    }
+//    return 1;
+//}
 
 #ifdef HAVE_LIBGTHREAD_2_0
 
@@ -608,16 +608,18 @@ int nids_init() {
     /* free resources that previous usages might have allocated */
     nids_exit();
 
-    if (nids_params.pcap_desc) {
-        desc = nids_params.pcap_desc;
-    } else if (nids_params.filename) {
-        if ((desc = pcap_open_offline(nids_params.filename,
-                                      nids_errbuf)) == NULL) {
-                                          return 0;
-        }
-    } else if (!open_live()) {
-        return 0;
-    }
+    desc = nids_params.pcap_desc;
+
+//    if (nids_params.pcap_desc) {
+//
+//    } else if (nids_params.filename) {
+//        if ((desc = pcap_open_offline(nids_params.filename,
+//                                      nids_errbuf)) == NULL) {
+//                                          return 0;
+//        }
+//    } else if (!open_live()) {
+//        return 0;
+//    }
 
     if (nids_params.pcap_filter != NULL) {
         u_int mask = 0;
@@ -631,69 +633,75 @@ int nids_init() {
             return 0;
         }
     }
-    switch ((linktype = pcap_datalink(desc))) {
-        /*
-         * support for Apple PKTAP datalink header
-         * since our libdivert library has extracted the PKTAP header
-         * then we just set the offset value to be zero
-         *
-         * date: 2015-09-21
-         * modified by huangyan13@baidu.com
-         */
+
+    if (desc != NULL) {
+        switch ((linktype = pcap_datalink(desc))) {
+            /*
+             * support for Apple PKTAP datalink header
+             * since our libdivert library has extracted the PKTAP header
+             * then we just set the offset value to be zero
+             *
+             * date: 2015-09-21
+             * modified by huangyan13@baidu.com
+             */
 #ifdef DLT_PKTAP
-        case DLT_PKTAP:
-            nids_linkoffset = 0;
-            break;
+            case DLT_PKTAP:
+                nids_linkoffset = 0;
+                break;
 #endif
 #ifdef DLT_IEEE802_11
 #ifdef DLT_PRISM_HEADER
-        case DLT_PRISM_HEADER:
+            case DLT_PRISM_HEADER:
 #endif
 #ifdef DLT_IEEE802_11_RADIO
-        case DLT_IEEE802_11_RADIO:
+            case DLT_IEEE802_11_RADIO:
 #endif
-        case DLT_IEEE802_11:
-            /* wireless, need to calculate offset per frame */
-            break;
+            case DLT_IEEE802_11:
+                /* wireless, need to calculate offset per frame */
+                break;
 #endif
 #ifdef DLT_NULL
-        case DLT_NULL:
-            nids_linkoffset = 4;
-            break;
+            case DLT_NULL:
+                nids_linkoffset = 4;
+                break;
 #endif
-        case DLT_EN10MB:
-            nids_linkoffset = 14;
-            break;
-        case DLT_PPP:
-            nids_linkoffset = 4;
-            break;
-            /* Token Ring Support by vacuum@technotronic.com, thanks dugsong! */
-        case DLT_IEEE802:
-            nids_linkoffset = 22;
-            break;
+            case DLT_EN10MB:
+                nids_linkoffset = 14;
+                break;
+            case DLT_PPP:
+                nids_linkoffset = 4;
+                break;
+                /* Token Ring Support by vacuum@technotronic.com, thanks dugsong! */
+            case DLT_IEEE802:
+                nids_linkoffset = 22;
+                break;
 
-        case DLT_RAW:
-        case DLT_SLIP:
-            nids_linkoffset = 0;
-            break;
+            case DLT_RAW:
+            case DLT_SLIP:
+                nids_linkoffset = 0;
+                break;
 #define DLT_LINUX_SLL   113
-        case DLT_LINUX_SLL:
-            nids_linkoffset = 16;
-            break;
+            case DLT_LINUX_SLL:
+                nids_linkoffset = 16;
+                break;
 #ifdef DLT_FDDI
-        case DLT_FDDI:
-            nids_linkoffset = 21;
-            break;
+            case DLT_FDDI:
+                nids_linkoffset = 21;
+                break;
 #endif
 #ifdef DLT_PPP_SERIAL
-        case DLT_PPP_SERIAL:
-            nids_linkoffset = 4;
-            break;
+            case DLT_PPP_SERIAL:
+                nids_linkoffset = 4;
+                break;
 #endif
-        default:
-            strcpy(nids_errbuf, "link type unknown");
-            return 0;
+            default:
+                strcpy(nids_errbuf, "link type unknown");
+                return 0;
+        }
+    } else {
+        nids_linkoffset = 0;
     }
+
     if (nids_params.dev_addon == -1) {
         if (linktype == DLT_EN10MB) {
             nids_params.dev_addon = 16;
