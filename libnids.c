@@ -252,6 +252,9 @@ void nids_pcap_handler(u_char *par, struct pcap_pkthdr *hdr, u_char *data) {
     nids_last_pcap_data = data;
     (void)par; /* warnings... */
     switch (linktype) {
+        case 0:
+            nids_linkoffset = 0;
+            break;
 #ifdef DLT_PKTAP
         case DLT_PKTAP:
             nids_linkoffset = 0;
@@ -699,6 +702,7 @@ int nids_init() {
                 return 0;
         }
     } else {
+        linktype = 0;
         nids_linkoffset = 0;
     }
 
