@@ -557,11 +557,7 @@ void nids_unregister_ip_frag(void (*x)) {
 //    return 0;
 //    }
 //#endif
-//    if (!raw_init()) {
-//        nids_errbuf[0] = 0;
-//        strncat(nids_errbuf, strerror(errno), sizeof(nids_errbuf) - 1);
-//        return 0;
-//    }
+
 //    return 1;
 //}
 
@@ -721,6 +717,12 @@ int nids_init() {
     tcp_init(nids_params.n_tcp_streams);
     ip_frag_init(nids_params.n_hosts);
     scan_init();
+
+    if (!raw_init()) {
+        nids_errbuf[0] = 0;
+        strncat(nids_errbuf, strerror(errno), sizeof(nids_errbuf) - 1);
+        return 0;
+    }
 
     if (nids_params.multiproc) {
 #ifdef HAVE_LIBGTHREAD_2_0
