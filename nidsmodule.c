@@ -868,6 +868,29 @@ pynids_dispatch(PyObject *na, PyObject *args)
 	return PyInt_FromLong((long) ret);
 }
 
+static PyObject *
+		pynids_convert(PyObject *na, PyObject *args)
+{
+	PyObject *obj = NULL;
+	char *attr_name = "value";
+	if (!PyArg_ParseTuple(args, "O:convert", &obj)) {
+		Py_RETURN_NONE;
+	}
+	PyObject *value = PyObject_GetAttrString(obj, attr_name);
+	if (value != NULL) {
+		if (value == Py_None) {
+			Py_RETURN_NONE;
+		} else {
+			return (PyObject *)wrapTcpStream((struct tcp_stream *)PyInt_AsLong(value));
+		}
+	} else {
+		Py_RETURN_NONE;
+	}
+	Py_RETURN_NONE;
+}
+
+static char pynids_convert__doc__[] = "";
+
 static char pynids_run__doc__[] =
 "run() -> None\n\
 \n\
@@ -991,6 +1014,7 @@ static PyMethodDef pynids_methods[] = {
     mkMethod(param),
     mkMethod(get_pkt_ts),
     mkMethod(get_pcap_stats),
+    mkMethod(convert),
 	{NULL,		NULL}		/* sentinel */
 };
 
