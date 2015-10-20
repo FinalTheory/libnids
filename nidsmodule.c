@@ -45,8 +45,6 @@
 
 static PyObject *pynids_error;         /* libdivert.error */
 
-static int pynids_offline_read = 0;    /* see libdivert.init(), libdivert.next() */
-
 static PyObject *tcpFunc  = NULL;
 static PyObject *udpFunc  = NULL;
 static PyObject *ipFunc   = NULL;
@@ -130,32 +128,6 @@ raisePynidsError(void)
 
 	PyErr_SetString(pynids_error, nids_errbuf);
 	return NULL;
-}
-
-/* nids_dispatch_exc()
- *
- * Like nids_dispatch, but setting a Python exception upon serious error.
- * Non-serious error conditions (timeout, EOF) do not raise an exception.
- *
- * args: none
- * rtrn: >0 on successfully processing one packet
- *       0 timeout or EOF
- *       -1 exception thrown (either in user callback or in nids/pcap)
- *
- */
-static int
-nids_dispatch_exc(int n)
-{
-	int ret;
-
-	DBG("nids_dispatch_exc(%d)\n", n);
-	ret = nids_dispatch(n);
-	if (ret == -1) { /* pcap error trumps user callback exception */
-		raisePynidsError();
-		return -1;
-	}
-	if (PyErr_Occurred()) return -1; /* check for callback exception */
-	return ret;
 }
 
 /* pytuple4(tuple4): ((src, sport), (dst, dport)) */
@@ -812,62 +784,6 @@ pynids_param(PyObject *na, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char pynids_getfd__doc__[] =
-"getfd() -> fd\n\
-\n\
-Returns the integral file descriptor of the live capture device or pcap\n\
-savefile specified during the call to init().  The resultant fd is suitable\n\
-for I/O polling with select.select(), for example.\n";
-
-static PyObject *
-pynids_getfd(PyObject *na, PyObject *args)
-{
-	int pcap_fd;
-	
-	if (!PyArg_ParseTuple(args, ":getfd")) return NULL;
-
-	if ((pcap_fd = nids_getfd()) == -1) return raisePynidsError();
-    return PyInt_FromLong((long) pcap_fd);
-}
-
-static char pynids_next__doc__[] =
-"next() -> r\n\
-\n\
-Attempt to process one packet, returning 1 if a packet was processed and 0\n\
-on timeout or EOF, as appropriate to the capture stream.  Serious errors in\n\
-pcap raise a libdivert.error exception.\n";
-
-static PyObject *
-pynids_next(PyObject *na, PyObject *args)
-{
-	int ret;
-
-	if (!PyArg_ParseTuple(args, ":next")) return NULL;
-
-	ret = nids_dispatch_exc(1);
-	if (PyErr_Occurred()) return NULL; /* python callback error */
-
-	return PyInt_FromLong((long) ret);
-}
-
-static char pynids_dispatch__doc__[] =
-"dispatch(cnt) -> processed\n\
-\n\
-UNDOCUMENTED -- this function does not exist in libnids <= 1.19.\n";
-
-static PyObject *
-pynids_dispatch(PyObject *na, PyObject *args)
-{
-	int ret, cnt;
-
-	if (!PyArg_ParseTuple(args, "i:dispatch", &cnt)) return NULL;
-
-	ret = nids_dispatch_exc(cnt);
-	if (ret == -1) return NULL;
-
-	return PyInt_FromLong((long) ret);
-}
-
 static PyObject *
 		pynids_convert(PyObject *na, PyObject *args)
 {
@@ -890,37 +806,6 @@ static PyObject *
 }
 
 static char pynids_convert__doc__[] = "";
-
-static char pynids_run__doc__[] =
-"run() -> None\n\
-\n\
-On a live capture, process packets ad infinitum; on an offline read, process\n\
-packets until EOF.  In either case, an exception thrown in a user callback\n\
-or in nids/pcap (as libdivert.error) may abort processing.\n";
-
-static PyObject *
-pynids_run(PyObject *na, PyObject *args)
-{
-    int r;
-
-	if (!PyArg_ParseTuple(args, ":run")) return NULL;
-
-	if (pynids_offline_read) {
-		/* read until EOF, checking for exceptions along the way */
-		do { r = nids_dispatch_exc(1); } while (r > 0);
-	} else {
-		/* read forever, checking for exceptions along the way */
-		do { r = nids_dispatch_exc(1); } while (r >= 0);
-	}
-
-	if (r == -1) return NULL;
-
-#if 0
-	if (r != 0) runtime error!
-#endif
-
-	Py_RETURN_NONE;
-}
 
 static char pynids_init__doc__[] =
 "init() -> None\n\
@@ -1001,10 +886,6 @@ pynids_get_pcap_stats(PyObject *na, PyObject *args)
     {#x, pynids_##x, METH_VARARGS, pynids_##x##__doc__}
 
 static PyMethodDef pynids_methods[] = {
-    mkMethod(run),
-    mkMethod(dispatch),
-    mkMethod(getfd),
-    mkMethod(next),
     mkMethod(register_tcp),
     mkMethod(register_udp),
     mkMethod(register_ip),
