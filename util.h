@@ -11,6 +11,7 @@
 
 struct proc_node {
   void (*item)();
+  void *data;
   struct proc_node *next;
 };
 
@@ -23,7 +24,7 @@ struct lurker_node {
 
 void nids_no_mem(char *);
 char *test_malloc(int);
-void register_callback(struct proc_node **procs, void (*x));
+void register_callback(struct proc_node **procs, void (*x), void *data);
 void unregister_callback(struct proc_node **procs, void (*x));
 
 static inline int

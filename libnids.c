@@ -33,9 +33,6 @@
 #include "util.h"
 #include "nids.h"
 
-#ifdef HAVE_LIBGTHREAD_2_0
-#include <glib.h>
-#endif
 
 #ifdef __linux__
 extern int set_all_promisc();
@@ -59,24 +56,6 @@ struct proc_node *tcp_procs;
 static int linktype;
 static pcap_t *desc = NULL;
 
-#ifdef HAVE_LIBGTHREAD_2_0
-
-/* async queue for multiprocessing - mcree */
-static GAsyncQueue *cap_queue;
-
-/* items in the queue */
-struct cap_queue_item {
-     void *data;
-     bpf_u_int32 caplen;
-};
-
-/* marks end of queue */
-static struct cap_queue_item EOF_item;
-
-/* error buffer for glib calls */
-static GError *gerror = NULL;
-
-#endif
 
 char nids_errbuf[PCAP_ERRBUF_SIZE];
 struct pcap_pkthdr *nids_last_pcap_header = NULL;
@@ -230,9 +209,6 @@ static void call_ip_frag_procs(void *data, bpf_u_int32 caplen) {
 
 void nids_pcap_handler(u_char *par, struct pcap_pkthdr *hdr, u_char *data) {
     u_char *data_aligned;
-#ifdef HAVE_LIBGTHREAD_2_0
-    struct cap_queue_item *qitem;
-#endif
 #ifdef DLT_IEEE802_11
     unsigned short fc;
     int linkoffset_tweaked_by_prism_code = 0;
@@ -351,35 +327,7 @@ void nids_pcap_handler(u_char *par, struct pcap_pkthdr *hdr, u_char *data) {
 #endif
     data_aligned = data + nids_linkoffset;
 
-#ifdef HAVE_LIBGTHREAD_2_0
-    if(nids_params.multiproc) {
-       /*
-        * Insert received fragment into the async capture queue.
-        * We hope that the overhead of memcpy
-        * will be saturated by the benefits of SMP - mcree
-        */
-       qitem=malloc(sizeof(struct cap_queue_item));
-       if (qitem && (qitem->data=malloc(hdr->caplen - nids_linkoffset))) {
-         qitem->caplen=hdr->caplen - nids_linkoffset;
-         memcpy(qitem->data,data_aligned,qitem->caplen);
-         g_async_queue_lock(cap_queue);
-         /* ensure queue does not overflow */
-         if(g_async_queue_length_unlocked(cap_queue) > nids_params.queue_limit) {
-       /* queue limit reached: drop packet - should we notify user via syslog? */
-       free(qitem->data);
-       free(qitem);
-       } else {
-       /* insert packet to queue */
-       g_async_queue_push_unlocked(cap_queue,qitem);
-         }
-         g_async_queue_unlock(cap_queue);
-   }
-    } else { /* user requested simple passthru - no threading */
-       call_ip_frag_procs(data_aligned,hdr->caplen - nids_linkoffset);
-    }
-#else
     call_ip_frag_procs(data_aligned, hdr->caplen - nids_linkoffset);
-#endif
 }
 
 static void gen_ip_frag_proc(u_char *data, int len) {
@@ -495,16 +443,18 @@ static void gen_ip_proc(u_char *data, int skblen) {
 static void init_procs() {
     ip_frag_procs = mknew(struct proc_node);
     ip_frag_procs->item = gen_ip_frag_proc;
+    ip_frag_procs->data = NULL;
     ip_frag_procs->next = 0;
     ip_procs = mknew(struct proc_node);
     ip_procs->item = gen_ip_proc;
+    ip_procs->data = NULL;
     ip_procs->next = 0;
     tcp_procs = 0;
     udp_procs = 0;
 }
 
 void nids_register_udp(void (*x)) {
-    register_callback(&udp_procs, x);
+    register_callback(&udp_procs, x, NULL);
 }
 
 void nids_unregister_udp(void (*x)) {
@@ -512,7 +462,7 @@ void nids_unregister_udp(void (*x)) {
 }
 
 void nids_register_ip(void (*x)) {
-    register_callback(&ip_procs, x);
+    register_callback(&ip_procs, x, NULL);
 }
 
 void nids_unregister_ip(void (*x)) {
@@ -520,7 +470,7 @@ void nids_unregister_ip(void (*x)) {
 }
 
 void nids_register_ip_frag(void (*x)) {
-    register_callback(&ip_frag_procs, x);
+    register_callback(&ip_frag_procs, x, NULL);
 }
 
 void nids_unregister_ip_frag(void (*x)) {
@@ -561,64 +511,16 @@ void nids_unregister_ip_frag(void (*x)) {
 //    return 1;
 //}
 
-#ifdef HAVE_LIBGTHREAD_2_0
-
-#define START_CAP_QUEUE_PROCESS_THREAD() \
-    if(nids_params.multiproc) { /* threading... */ \
-     if(!(g_thread_create_full((GThreadFunc)cap_queue_process_thread,NULL,0,FALSE,TRUE,G_THREAD_PRIORITY_LOW,&gerror))) { \
-        strcpy(nids_errbuf, "thread: "); \
-        strncat(nids_errbuf, gerror->message, sizeof(nids_errbuf) - 8); \
-        return 0; \
-     }; \
-    }
-
-#define STOP_CAP_QUEUE_PROCESS_THREAD() \
-    if(nids_params.multiproc) { /* stop the capture process thread */ \
-     g_async_queue_push(cap_queue,&EOF_item); \
-    }
-
-
-/* thread entry point
- * pops capture queue items and feeds them to
- * the ip fragment processors - mcree
- */
-static void cap_queue_process_thread()
-{
-     struct cap_queue_item *qitem;
-
-     while(1) { /* loop "forever" */
-      qitem=g_async_queue_pop(cap_queue);
-      if (qitem==&EOF_item) break; /* EOF item received: we should exit */
-      call_ip_frag_procs(qitem->data,qitem->caplen);
-      free(qitem->data);
-      free(qitem);
-     }
-     g_thread_exit(NULL);
-}
-
-#else
 
 #define START_CAP_QUEUE_PROCESS_THREAD()
 #define STOP_CAP_QUEUE_PROCESS_THREAD()
 
-#endif
 
 int nids_init() {
     /* free resources that previous usages might have allocated */
     nids_exit();
 
     desc = nids_params.pcap_desc;
-
-//    if (nids_params.pcap_desc) {
-//
-//    } else if (nids_params.filename) {
-//        if ((desc = pcap_open_offline(nids_params.filename,
-//                                      nids_errbuf)) == NULL) {
-//                                          return 0;
-//        }
-//    } else if (!open_live()) {
-//        return 0;
-//    }
 
     if (nids_params.pcap_filter != NULL) {
         u_int mask = 0;
@@ -725,29 +627,11 @@ int nids_init() {
     }
 
     if (nids_params.multiproc) {
-#ifdef HAVE_LIBGTHREAD_2_0
-        g_thread_init(NULL);
-        cap_queue=g_async_queue_new();
-#else
         strcpy(nids_errbuf, "libnids was compiled without threads support");
         return 0;
-#endif
     }
 
     return 1;
-}
-
-int nids_run() {
-//    if (!desc) {
-//        strcpy(nids_errbuf, "Libnids not initialized");
-//        return 0;
-//    }
-//    START_CAP_QUEUE_PROCESS_THREAD(); /* threading... */
-//    pcap_loop(desc, -1, (pcap_handler)nids_pcap_handler, 0);
-//    /* FIXME: will this code ever be called? Don't think so - mcree */
-//    STOP_CAP_QUEUE_PROCESS_THREAD();
-//    nids_exit();
-    return 0;
 }
 
 void nids_exit() {
@@ -755,15 +639,6 @@ void nids_exit() {
         strcpy(nids_errbuf, "Libnids not initialized");
         return;
     }
-#ifdef HAVE_LIBGTHREAD_2_0
-    if (nids_params.multiproc) {
-    /* I have no portable sys_sched_yield,
-       and I don't want to add more synchronization...
-    */
-      while (g_async_queue_length(cap_queue)>0) 
-        usleep(100000);
-    }
-#endif
     tcp_exit();
     ip_frag_exit();
     scan_exit();
@@ -776,51 +651,4 @@ void nids_exit() {
 
     free(ip_procs);
     free(ip_frag_procs);
-}
-
-int nids_getfd() {
-    if (!desc) {
-        strcpy(nids_errbuf, "Libnids not initialized");
-        return -1;
-    }
-    return pcap_get_selectable_fd(desc);
-}
-
-int nids_next() {
-//    struct pcap_pkthdr h;
-//    char *data;
-//
-//    if (!desc) {
-//        strcpy(nids_errbuf, "Libnids not initialized");
-//        return 0;
-//    }
-//    if (!(data = (char *)pcap_next(desc, &h))) {
-//        strcpy(nids_errbuf, "next: ");
-//        strncat(nids_errbuf, pcap_geterr(desc), sizeof(nids_errbuf) - 7);
-//        return 0;
-//    }
-//    /* threading is quite useless (harmful) in this case - should we do an API change?  */
-//    START_CAP_QUEUE_PROCESS_THREAD();
-//    nids_pcap_handler(0, &h, (u_char *)data);
-//    STOP_CAP_QUEUE_PROCESS_THREAD();
-//    return 1;
-    return 0;
-}
-
-int nids_dispatch(int cnt) {
-//    int r;
-//
-//    if (!desc) {
-//        strcpy(nids_errbuf, "Libnids not initialized");
-//        return -1;
-//    }
-//    START_CAP_QUEUE_PROCESS_THREAD(); /* threading... */
-//    if ((r = pcap_dispatch(desc, cnt, (pcap_handler)nids_pcap_handler,
-//                           NULL)) == -1) {
-//        strcpy(nids_errbuf, "dispatch: ");
-//        strncat(nids_errbuf, pcap_geterr(desc), sizeof(nids_errbuf) - 11);
-//    }
-//    STOP_CAP_QUEUE_PROCESS_THREAD();
-//    return r;
-    return 0;
 }

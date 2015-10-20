@@ -31,7 +31,7 @@ test_malloc(int x)
 }
 
 void
-register_callback(struct proc_node **procs, void (*x))
+register_callback(struct proc_node **procs, void (*x), void *data)
 {
   struct proc_node *ipp;
 
@@ -41,6 +41,7 @@ register_callback(struct proc_node **procs, void (*x))
   ipp = mknew(struct proc_node);
   ipp->item = x;
   ipp->next = *procs;
+  ipp->data = data;
   *procs = ipp;
 }
 

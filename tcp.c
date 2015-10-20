@@ -59,6 +59,7 @@ static struct tcp_stream *tcp_latest = 0, *tcp_oldest = 0;
 static struct tcp_stream *free_streams;
 static struct ip *ugly_iphdr;
 struct tcp_timeout *nids_tcp_timeouts = 0;
+pid_t tcp_stream_pid = -1, tcp_stream_epid = -1;
 
 static void purge_queue(struct half_stream * h)
 {
@@ -286,6 +287,8 @@ add_new_tcp(struct tcphdr * this_tcphdr, struct ip * this_iphdr)
   tcp_num++;
   tolink = tcp_stream_table[hash_index];
   memset(a_tcp, 0, sizeof(struct tcp_stream));
+  a_tcp->pid = tcp_stream_pid;
+  a_tcp->epid = tcp_stream_epid;
   a_tcp->hash_index = hash_index;
   a_tcp->addr = addr;
   a_tcp->client.state = TCP_SYN_SENT;
@@ -839,7 +842,7 @@ process_tcp(u_char * data, int skblen)
 	    char ccu = a_tcp->client.collect_urg;
 	    char scu = a_tcp->server.collect_urg;
 	    
-	    (i->item) (a_tcp, &data);
+	    (i->item) (a_tcp, &data, i->data);
 	    if (cc < a_tcp->client.collect)
 	      whatto |= COLLECT_cc;
 	    if (ccu < a_tcp->client.collect_urg)
@@ -910,9 +913,15 @@ nids_discard(struct tcp_stream * a_tcp, int num)
 }
 
 void
+nids_register_tcp_data(void (*x), void *data)
+{
+  register_callback(&tcp_procs, x, data);
+}
+
+void
 nids_register_tcp(void (*x))
 {
-  register_callback(&tcp_procs, x);
+  register_callback(&tcp_procs, x, NULL);
 }
 
 void

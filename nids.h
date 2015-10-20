@@ -106,6 +106,7 @@ struct tcp_stream
   int read;
   struct tcp_stream *next_free;
   void *user;
+  pid_t pid, epid;
 };
 
 struct nids_prm
@@ -147,16 +148,13 @@ void nids_unregister_ip_frag (void (*));
 void nids_register_ip (void (*));
 void nids_unregister_ip (void (*));
 void nids_register_tcp (void (*));
+void nids_register_tcp_data(void (*x), void *data);
 void nids_unregister_tcp (void (*x));
 void nids_register_udp (void (*));
 void nids_unregister_udp (void (*));
 void nids_killtcp (struct tcp_stream *);
 void nids_discard (struct tcp_stream *, int);
-//int nids_run (void);
 void nids_exit(void);
-int nids_getfd (void);
-int nids_dispatch (int);
-//int nids_next (void);
 void nids_pcap_handler(u_char *, struct pcap_pkthdr *, u_char *);
 struct tcp_stream *nids_find_tcp_stream(struct tuple4 *);
 void nids_free_tcp_stream(struct tcp_stream *);
