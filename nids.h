@@ -166,6 +166,7 @@ extern struct pcap_pkthdr *nids_last_pcap_header;
 extern u_char *nids_last_pcap_data;
 extern u_int nids_linkoffset;
 extern struct tcp_timeout *nids_tcp_timeouts;
+extern pid_t tcp_stream_pid, tcp_stream_epid;
 
 struct nids_chksum_ctl {
 	u_int netaddr;
