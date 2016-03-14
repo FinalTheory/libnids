@@ -821,17 +821,15 @@ static PyObject *
 pynids_init(PyObject *na, PyObject *args)
 {
 	/*
-	 * do nothing here, because vars are init in libdivert
-	 * modified by huangyan13@baidu.com 2015.09.23
+	 * call the init function of libdivert
+	 * modified by huangyan13@baidu.com 2016.03.14
 	 */
+	int ok;
+	if (!PyArg_ParseTuple(args, ":init")) return NULL;
 
-//	int ok;
-//	if (!PyArg_ParseTuple(args, ":init")) return NULL;
-//
-//	ok = nids_init();
-//	if (! ok) return raisePynidsError();
-//	if (nids_params.filename) pynids_offline_read = 1;
-//	else pynids_offline_read = 0;
+	int divert_init_nids();
+	ok = divert_init_nids();
+	if (!ok) return raisePynidsError();
 
 	Py_RETURN_NONE;
 }
