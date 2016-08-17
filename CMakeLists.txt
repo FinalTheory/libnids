@@ -34,7 +34,7 @@ set(SOURCE_FILES_NIDS
 
 # if you could not build successfully or error occured when importing nids
 # try to replace here with your real python version
-set(PYVER "2.7.10_2")
+set(PYVER "2.7.11")
 
 
 string(SUBSTRING ${PYVER} 0 3 PYVER_2)
